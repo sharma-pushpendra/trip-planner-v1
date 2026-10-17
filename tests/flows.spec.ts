@@ -1,0 +1,20 @@
+import {test,expect} from '@playwright/test';
+test('demo editor, budget, local saves, and missing-key errors',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://localhost:3000');
+ await expect(page.getByRole('heading',{name:/Your next adventure/})).toBeVisible();
+ await page.screenshot({path:'tests/desktop.png',fullPage:true});
+ await page.getByRole('button',{name:'Plan my trip'}).first().click();await page.getByRole('button',{name:'Explore Jaipur demo'}).click();
+ await expect(page.getByText('DEMO WORKSPACE',{exact:true})).toBeVisible();await expect(page.locator('.day-panel')).toHaveCount(3);
+ const budget=await page.locator('.budget-value').innerText();
+ await page.getByRole('button',{name:'Add your own stop'}).first().click();await page.getByRole('textbox',{name:'Activity name',exact:true}).fill('Coffee detour');await page.getByRole('spinbutton',{name:'Activity total cost'}).fill('500');await page.getByRole('textbox',{name:'Activity notes',exact:true}).fill('Window seat please');await page.getByRole('button',{name:'Add stop',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Coffee detour'})).toBeVisible();expect(await page.locator('.budget-value').innerText()).not.toBe(budget);
+ await page.getByRole('textbox',{name:'Notes for Coffee detour'}).fill('Updated note');await page.getByRole('button',{name:'Move Coffee detour up'}).click();await page.getByRole('button',{name:'Mark Coffee detour completed'}).click();await expect(page.locator('.activity.done')).toHaveCount(1);
+ await page.getByRole('button',{name:'Save trip',exact:true}).click();await page.getByRole('button',{name:'My trips'}).click();await page.getByRole('button',{name:'Open itinerary'}).click();await expect(page.getByRole('textbox',{name:'Notes for Coffee detour'})).toHaveValue('Updated note');
+ await page.getByRole('button',{name:'Remove Coffee detour'}).click();expect(await page.locator('.budget-value').innerText()).toBe(budget);
+ await page.getByRole('button',{name:'Discover',exact:true}).click();await page.getByRole('button',{name:'Accommodation',exact:true}).click();await expect(page.locator('.recommendation')).toHaveCount(1);
+ await page.getByRole('button',{name:'Sources',exact:false}).click();await expect(page.getByRole('heading',{name:'No live evidence in this sample.'})).toBeVisible();
+ await page.getByRole('button',{name:'Research',exact:true}).click();await page.getByRole('button',{name:'Set up live research'}).click();await page.getByRole('button',{name:'Start live research'}).click();
+ await expect(page.locator('.task-status.failed')).toHaveCount(4,{timeout:20000});await expect(page.getByRole('button',{name:'Retry',exact:true})).toHaveCount(4);
+ await page.getByRole('button',{name:'Retry',exact:true}).first().click();await expect(page.locator('.task-status.failed')).toHaveCount(4);expect(errors).toEqual([]);
+});
+test('mobile layout and form validation',async({page})=>{await page.setViewportSize({width:390,height:844});await page.goto('http://localhost:3000');await page.screenshot({path:'tests/mobile.png',fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);await page.getByRole('button',{name:'Toggle menu'}).click();await expect(page.getByRole('button',{name:'My trips'})).toBeVisible();await page.getByRole('button',{name:'Start exploring'}).click();await page.getByLabel('Return date',{exact:true}).fill('2026-11-01');await page.getByRole('button',{name:'Explore Jaipur demo'}).click();await expect(page.getByRole('dialog')).toBeVisible();expect(await page.getByLabel('Return date',{exact:true}).evaluate((el:HTMLInputElement)=>el.validity.rangeUnderflow)).toBe(true);});

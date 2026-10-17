@@ -1,0 +1,20 @@
+import { z } from 'zod';
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>!isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0,10)===v,'Invalid date');
+export const tripSchema = z.object({origin:z.string().trim().min(2).max(100),destination:z.string().trim().min(2).max(100),choose:z.boolean(),departure:date,returnDate:date,flexible:z.boolean(),travelers:z.number().int().min(1).max(12),budget:z.number().positive().max(100000000),currency:z.enum(['INR','USD','EUR','GBP']),styles:z.array(z.string().max(30)).max(7),accommodation:z.string().max(100),transport:z.string().max(100),preferences:z.string().max(500),instructions:z.string().max(1000)}).refine(v=>v.returnDate>=v.departure,{message:'Return date must follow departure date',path:['returnDate']}).refine(v=>(Date.parse(v.returnDate)-Date.parse(v.departure))/86400000<30,{message:'Plan up to 30 days at a time',path:['returnDate']});
+export type TripRequest=z.infer<typeof tripSchema>;
+export const categories=['Attractions','Accommodation','Transportation','Food'] as const;
+export type Category=typeof categories[number];
+export type ResearchSource={id:string;url:string;retrievedAt:string|null;evidence:string;openingHours:string|null;restrictions:string|null;availability:string|null};
+export type TravelRecommendation={id:string;name:string;category:Category;location:string|null;price:number|null;currency:string|null;priceBasis:string|null;duration:string|null;sourceId:string|null;label:'sourced'|'illustrative'|'user';notes:string};
+export type AccommodationOption=TravelRecommendation & {category:'Accommodation'};
+export type TransportOption=TravelRecommendation & {category:'Transportation'};
+export type ResearchEvent={category:Category;message:string;timestamp:string};
+export type ResearchJob={category:Category;status:'queued'|'running'|'completed'|'failed';error?:string};
+export type ResearchReport={category:Category;report:string;citations:string[];retrievedAt:string};
+export type ItineraryActivity={id:string;recommendationId:string|null;name:string;notes:string;period:'Morning'|'Afternoon'|'Evening';cost:number|null;done:boolean};
+export type ItineraryDay={date:string;activities:ItineraryActivity[]};
+export type BudgetItem={name:string;amount:number|null;currency:string;label:string};
+export type TripResult={id:string;mode:'demo'|'live';request:TripRequest;recommendations:TravelRecommendation[];sources:ResearchSource[];reports:ResearchReport[];days:ItineraryDay[];createdAt:string};
+export const defaultTrip:TripRequest={origin:'New Delhi',destination:'Jaipur',choose:false,departure:'2026-11-13',returnDate:'2026-11-15',flexible:false,travelers:2,budget:25000,currency:'INR',styles:['Culture','Food'],accommodation:'Boutique hotel',transport:'Train & local transport',preferences:'',instructions:''};
+export const extractedSchema=z.object({items:z.array(z.object({name:z.string().max(200),sourceUrl:z.string().url(),location:z.string().nullable().default(null),price:z.number().nonnegative().nullable().default(null),currency:z.string().regex(/^[A-Z]{3}$/).nullable().default(null),priceBasis:z.string().nullable().default(null),duration:z.string().nullable().default(null),openingHours:z.string().nullable().default(null),availability:z.string().nullable().default(null),restrictions:z.string().nullable().default(null),evidence:z.string().max(6000),notes:z.string().default('')})).max(20)});
+export function safeUrl(value:string){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(u.hostname)&&!/(localhost|\.local|\.internal)$/i.test(u.hostname);}catch{return false;}}
