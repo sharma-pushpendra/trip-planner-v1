@@ -44,25 +44,38 @@ export default function Home(){
  <div className="workspace-heading"><div><div className="kicker">YOUR NEXT CHAPTER</div><h1 className="page-title">{request.choose?'Find your somewhere.':request.destination}<span className="title-dot">.</span></h1><p className="trip-meta"><MapPin size={15}/> From {request.origin}<span>·</span><CalendarDays size={15}/>{request.departure} — {request.returnDate}<span>·</span><Users size={15}/>{request.travelers} travelers</p></div><div className="actions no-print"><button className="secondary" onClick={()=>{setTab('Itinerary');setTimeout(()=>window.print(),100);}} disabled={!result||busy}><Printer size={16}/> Print / PDF</button><button className="primary" onClick={save} disabled={!result||busy}><Bookmark size={16}/> Save trip</button></div></div>
  {notice&&<div role="status" className="notice">{notice}<button className="icon-button" aria-label="Dismiss notice" onClick={()=>setNotice('')}><X size={16}/></button></div>}
  
- {/* NEW CSS BLOCK FOR 100% FIXED ANIMATED LAYOUT */}
+ {/* 100% FINAL FIX FOR SIDEBAR SCROLL & OVERLAP */}
  <style dangerouslySetInnerHTML={{__html: `
    .layout-container { display: flex; flex-direction: row; gap: 32px; width: 100%; align-items: flex-start; position: relative; padding-bottom: 20px; }
    .main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
    
-   /* Perfect Sticky Sidebar with internal scroll */
+   /* Clean Sticky Sidebar - No double scrolling */
    .sticky-sidebar { 
-     position: sticky; top: 24px; display: flex; flex-direction: column; gap: 24px; width: 340px; 
-     flex-shrink: 0; align-self: flex-start; 
-     max-height: calc(100vh - 48px); overflow-y: auto; 
-     scrollbar-width: none; -ms-overflow-style: none; /* Hide scrollbar for neatness */
-     animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+     position: sticky !important; 
+     top: 24px !important; 
+     display: flex; 
+     flex-direction: column; 
+     gap: 24px; 
+     width: 340px; 
+     flex-shrink: 0; 
+     align-self: flex-start;
+     height: auto;
+     z-index: 10;
+     animation: slideUpFade 0.5s ease-out forwards;
    }
-   .sticky-sidebar::-webkit-scrollbar { display: none; }
    
-   /* This guarantees boxes inside sidebar never squish or overlap */
-   .sticky-sidebar > * { flex-shrink: 0 !important; height: auto !important; min-height: max-content; }
+   /* KILLS the internal sticky bug causing boxes to slide under each other */
+   .sticky-sidebar > * { 
+     position: relative !important; 
+     top: auto !important; 
+     bottom: auto !important;
+     flex-shrink: 0 !important; 
+     height: auto !important; 
+     min-height: max-content;
+     margin: 0 !important;
+   }
    
-   /* Nice Hover Animations */
+   /* Smooth Hover Animation */
    .sticky-sidebar .panel { transition: transform 0.3s ease, box-shadow 0.3s ease; }
    .sticky-sidebar .panel:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.2); }
    
@@ -70,8 +83,8 @@ export default function Home(){
    
    @media (max-width: 960px) { 
      .layout-container { flex-direction: column; } 
-     .sticky-sidebar { width: 100%; position: relative; top: 0; max-height: none; overflow-y: visible; animation: none; } 
-     .sticky-sidebar .panel:hover { transform: none; box-shadow: none; } 
+     .sticky-sidebar { width: 100%; position: relative !important; top: auto !important; animation: none; } 
+     .sticky-sidebar .panel:hover { transform: none; box-shadow: none; }
    }
  `}} />
 
