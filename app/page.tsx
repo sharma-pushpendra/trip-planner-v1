@@ -44,8 +44,39 @@ export default function Home(){
  <div className="workspace-heading"><div><div className="kicker">YOUR NEXT CHAPTER</div><h1 className="page-title">{request.choose?'Find your somewhere.':request.destination}<span className="title-dot">.</span></h1><p className="trip-meta"><MapPin size={15}/> From {request.origin}<span>·</span><CalendarDays size={15}/>{request.departure} — {request.returnDate}<span>·</span><Users size={15}/>{request.travelers} travelers</p></div><div className="actions no-print"><button className="secondary" onClick={()=>{setTab('Itinerary');setTimeout(()=>window.print(),100);}} disabled={!result||busy}><Printer size={16}/> Print / PDF</button><button className="primary" onClick={save} disabled={!result||busy}><Bookmark size={16}/> Save trip</button></div></div>
  {notice&&<div role="status" className="notice">{notice}<button className="icon-button" aria-label="Dismiss notice" onClick={()=>setNotice('')}><X size={16}/></button></div>}
  
- <div className="workspace-layout" style={{ display: "flex", flexDirection: "row", gap: "24px", width: "100%", alignItems: "flex-start", position: "relative" }}>
-   <div className="workspace-main" style={{ flex: 1, minWidth: 0 }}>
+ {/* NEW CSS BLOCK FOR 100% FIXED ANIMATED LAYOUT */}
+ <style dangerouslySetInnerHTML={{__html: `
+   .layout-container { display: flex; flex-direction: row; gap: 32px; width: 100%; align-items: flex-start; position: relative; padding-bottom: 20px; }
+   .main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+   
+   /* Perfect Sticky Sidebar with internal scroll */
+   .sticky-sidebar { 
+     position: sticky; top: 24px; display: flex; flex-direction: column; gap: 24px; width: 340px; 
+     flex-shrink: 0; align-self: flex-start; 
+     max-height: calc(100vh - 48px); overflow-y: auto; 
+     scrollbar-width: none; -ms-overflow-style: none; /* Hide scrollbar for neatness */
+     animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+   }
+   .sticky-sidebar::-webkit-scrollbar { display: none; }
+   
+   /* This guarantees boxes inside sidebar never squish or overlap */
+   .sticky-sidebar > * { flex-shrink: 0 !important; height: auto !important; min-height: max-content; }
+   
+   /* Nice Hover Animations */
+   .sticky-sidebar .panel { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+   .sticky-sidebar .panel:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.2); }
+   
+   @keyframes slideUpFade { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
+   
+   @media (max-width: 960px) { 
+     .layout-container { flex-direction: column; } 
+     .sticky-sidebar { width: 100%; position: relative; top: 0; max-height: none; overflow-y: visible; animation: none; } 
+     .sticky-sidebar .panel:hover { transform: none; box-shadow: none; } 
+   }
+ `}} />
+
+ <div className="workspace-layout layout-container">
+   <div className="workspace-main main-content">
      <div className="tabs no-print">{['Itinerary','Discover','Research','Sources'].map(t=><button key={t} onClick={()=>setTab(t)} className={tab===t?'active':''}>{t}{t==='Sources'&&<span>{result?.sources.length||0}</span>}{t==='Research'&&busy&&<LoaderCircle className="spin" size={13}/>}</button>)}</div>
  
  {tab==='Itinerary'&&<><div className="content-heading"><div><h2>A little structure. Room for serendipity.</h2><p>A suggested sequence, not a reservation. Confirm hours, routes, and access before you go.</p></div></div>{busy&&<div className="notice"><LoaderCircle className="spin" size={17}/> Research is running. Editing becomes available when the tasks settle.</div>}{request.choose?<div className="empty-state"><Compass size={30}/><h3>Choose a destination before planning your days.</h3><p>Review candidate locations in Discover, then edit requirements and research your chosen destination.</p><button className="secondary" onClick={()=>setTab('Discover')}>Compare destination ideas <ArrowRight size={16}/></button></div>:result?.days.map((day,di)=><section className="day-panel panel" key={day.date}><div className="day-header"><div className="day-number">{String(di+1).padStart(2,'0')}</div><div><h3>Day {di+1} <span>· {di===0?'A first taste of the city':di===1?'A little deeper, a little slower':'Follow your curiosity'}</span></h3><p>{new Date(day.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</p></div><span className="day-count">{day.activities.length} stops</span></div>
@@ -77,9 +108,8 @@ export default function Home(){
  {tab==='Sources'&&<><div className="content-heading"><h2>Good plans have a paper trail.</h2><p>Source links returned by TinyFish, separate from its research report.</p></div>{result?.reports.filter(report=>report.citations.length).length?result.reports.filter(report=>report.citations.length).map(report=><section className="panel" key={report.category}><h3>{report.category} report citations</h3><ul>{report.citations.map(url=><li key={url}><a href={url} target="_blank" rel="noopener noreferrer">{url} <ExternalLink size={13}/></a></li>)}</ul></section>):result?.sources.length?result.sources.map(s=><SourceCard key={s.id} source={s}/>):<div className="empty-state"><ShieldCheck size={34}/><h3>{result?.mode==='demo'?'No live evidence in this sample.':'No source URLs returned yet.'}</h3><p>{result?.mode==='demo'?'Demo recommendations are illustrative. No source URLs or current availability are claimed.':'Completed TinyFish reports and any source URLs they return appear here.'}</p></div>}</>}
    </div>
    
-   
-   <aside className="workspace-aside" style={{ display: "flex", flexDirection: "column", gap: "20px", width: "340px", flexShrink: 0, position: "sticky", top: "24px", height: "max-content", alignSelf: "flex-start" }}>
-     <div className="panel budget-card" style={{ height: "auto", minHeight: "fit-content", paddingBottom: "20px" }}><div className="aside-title"><span className="step-icon"><Wallet size={19}/></span><h3>Your budget, in view</h3></div><p className="small-muted">{result?.mode==='demo'?'Illustrative planned costs':'Known & user-entered costs'}</p><div className="budget-value">{money(budgetTotal,request.currency)}<small>of {money(request.budget,request.currency)}</small></div><div className="budget-track"><span style={{width:Math.min(100,budgetTotal/request.budget*100)+'%',background:budgetTotal>request.budget?'#e39170':undefined}}/></div><div className="budget-line"><span>Itinerary activities</span><b>{money(total,request.currency)}</b></div><div className="budget-line"><span>Stay & transport</span><b>{result?.mode==='demo'&&request.currency==='INR'?money(extras,request.currency):'Not included'}</b></div><div className="budget-line remaining"><span>{budgetTotal>request.budget?'Over budget':'Unallocated budget'}</span><b>{money(Math.abs(request.budget-budgetTotal),request.currency)}</b></div><p className="budget-note">{unknown>0?`${unknown} activities have unknown costs. `:''}{result?.mode==='demo'?'Sample allowances are for two travelers; they are not live quotes.':'Source prices are not automatically totaled when units, currency or group coverage are uncertain.'} This is a partial budget, not a full trip quote.</p></div><div className="panel travel-note"><ShieldCheck size={20}/><h3>A little certainty goes a long way.</h3><p>Check opening hours, entry requirements, cancellation terms, and accessibility directly before booking.</p><p>Days are grouped by location where available. Confirm journey times and opening-hour fit yourself.</p></div><div className="powered-note"><Fish size={18}/><span>Real-web research by <b>TinyFish</b><small>You stay in the pilot’s seat.</small></span></div>
+   <aside className="workspace-aside sticky-sidebar">
+     <div className="panel budget-card"><div className="aside-title"><span className="step-icon"><Wallet size={19}/></span><h3>Your budget, in view</h3></div><p className="small-muted">{result?.mode==='demo'?'Illustrative planned costs':'Known & user-entered costs'}</p><div className="budget-value">{money(budgetTotal,request.currency)}<small>of {money(request.budget,request.currency)}</small></div><div className="budget-track"><span style={{width:Math.min(100,budgetTotal/request.budget*100)+'%',background:budgetTotal>request.budget?'#e39170':undefined}}/></div><div className="budget-line"><span>Itinerary activities</span><b>{money(total,request.currency)}</b></div><div className="budget-line"><span>Stay & transport</span><b>{result?.mode==='demo'&&request.currency==='INR'?money(extras,request.currency):'Not included'}</b></div><div className="budget-line remaining"><span>{budgetTotal>request.budget?'Over budget':'Unallocated budget'}</span><b>{money(Math.abs(request.budget-budgetTotal),request.currency)}</b></div><p className="budget-note">{unknown>0?`${unknown} activities have unknown costs. `:''}{result?.mode==='demo'?'Sample allowances are for two travelers; they are not live quotes.':'Source prices are not automatically totaled when units, currency or group coverage are uncertain.'} This is a partial budget, not a full trip quote.</p></div><div className="panel travel-note"><ShieldCheck size={20}/><h3>A little certainty goes a long way.</h3><p>Check opening hours, entry requirements, cancellation terms, and accessibility directly before booking.</p><p>Days are grouped by location where available. Confirm journey times and opening-hour fit yourself.</p></div><div className="powered-note"><Fish size={18}/><span>Real-web research by <b>TinyFish</b><small>You stay in the pilot’s seat.</small></span></div>
    </aside>
  </div>
  </main>}
